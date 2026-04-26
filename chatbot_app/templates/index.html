@@ -15,7 +15,8 @@
 
         /* チャットログの基本設定 */
         #chat-log {
-            height: 450px; /* デフォルト（PC）の高さ */
+            height: 450px;
+            /* デフォルト（PC）の高さ */
             overflow-y: auto;
             background: white;
             padding: 20px;
@@ -101,55 +102,129 @@
                     </div>
                 </form>
 
-                <script>
-                    const chatForm = document.getElementById('chat-form');
-                    const chatLog = document.getElementById('chat-log');
-                    const userInput = document.getElementById('user-input');
+<script>
+    const chatForm = document.getElementById('chat-form');
+    const chatLog = document.getElementById('chat-log');
+    const userInput = document.getElementById('user-input');
 
-                    // メッセージを表示する関数（以前のものと同じ）
-                    function appendMessage(text, sender) {
-                        const msgDiv = document.createElement('div');
-                        msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-                        msgDiv.innerHTML = text;
-                        chatLog.appendChild(msgDiv);
-                        chatLog.scrollTop = chatLog.scrollHeight;
-                    }
+    // 状態管理用
+    let isRestoring = false;
 
-                    // フォームの送信イベント
-                    chatForm.addEventListener('submit', async (e) => {
-                        e.preventDefault();
+    // ページ読み込み時の処理（24時間経過後にデータクリア）
+    window.onload = function () {
+        const rawData = localStorage.getItem('chatHistory');
+        if (!rawData) return;
 
-                        const message = userInput.value;
-                        if (!message) return;
+        const savedData = JSON.parse(rawData);
+        const now = new Date().getTime();
 
-                        appendMessage(message, 'user');
-                        userInput.value = '';
+        // 24時間（24時間 * 60分 * 60秒 * 1000ミリ秒）経っているかチェック
+        if (now - savedData.time > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem('chatHistory'); // 古い場合は削除
+            return;
+        }
 
-                        // データの送り方を「URLSearchParams」に変更します
-                        const params = new URLSearchParams();
-                        params.append('input_text', message);
-                        params.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        // 24時間以内なら復元する
+        isRestoring = true;
+        if (savedData.history) {
+            savedData.history.forEach(log => {
+                appendMessage(log.text, log.role);
+            });
+        }
+        isRestoring = false;
+    };
 
-                        try {
-                            const response = await fetch("{% url 'bot_response' %}", {
-                                method: 'POST',
-                                body: params, // ここをparamsに変更
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded', // フォーム送信と同じ形式だと明示
-                                }
-                            });
+    // 履歴を保存する専用の関数（時刻と一緒に保存する）
+    function saveToStorage(historyArray) {
+        const data = {
+            time: new Date().getTime(), // 保存した時刻
+            history: historyArray       // 会話の内容
+        };
+        localStorage.setItem('chatHistory', JSON.stringify(data));
+    }
 
-                            if (response.ok) {
-                                const botText = await response.text();
-                                appendMessage(botText, 'bot');
-                            } else {
-                                appendMessage("サーバー側でエラーが発生しました(400等)。", 'bot');
-                            }
-                        } catch (error) {
-                            console.error("通信失敗:", error);
-                        }
-                    });
-                </script>
+    // メッセージを表示する関数（LocalStorageに保存する関数）
+    function appendMessage(text, sender) {
+        // 1. 画面に表示
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+        msgDiv.innerHTML = text;
+        chatLog.appendChild(msgDiv);
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        // 2. 保存処理（復元中以外かつ「読み込み中...」以外の時、LocalStorageに保存）
+        if (!isRestoring && text !== '読み込み中...') {
+            const rawData = localStorage.getItem('chatHistory');
+            let currentHistory = [];
+            if (rawData) {
+                const parsed = JSON.parse(rawData);
+                currentHistory = parsed.history || [];
+            }
+            currentHistory.push({ role: sender, text: text });
+            if (currentHistory.length > 20) currentHistory.shift(); // 直近20件のみ
+            saveToStorage(currentHistory);
+        }
+    }
+
+    // フォームの送信イベント
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const message = userInput.value;
+        if (!message) return;
+
+        // ユーザーのメッセージを表示
+        appendMessage(message, 'user');
+        userInput.value = '';
+
+        // 「読み込み中」表示
+        const loadingMsg = "読み込み中...";
+        appendMessage(loadingMsg, 'bot');
+        const loadingElements = chatLog.getElementsByClassName('bot-message');
+        const lastLoadingDiv = loadingElements[loadingElements.length - 1];
+
+        // データの準備
+        const params = new URLSearchParams();
+        params.append('input_text', message);
+        params.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        try {
+            const response = await fetch("{% url 'bot_response' %}", {
+                method: 'POST',
+                body: params,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+
+            if (response.ok) {
+                const botText = await response.text();
+                // 「読み込み中...」を実際の回答に書き換える
+                lastLoadingDiv.innerHTML = botText;
+                // 書き換えた後に保存
+                saveManual(botText, 'bot');
+            } else {
+                lastLoadingDiv.innerHTML = "サーバー側でエラーが発生しました。しばらく待ってから再度お試しください。";
+            }
+        } catch (error) {
+            lastLoadingDiv.innerHTML = "通信に失敗しました。";
+            console.error("通信失敗:", error);
+        }
+        
+    });
+
+    // AIの回答を後から保存するための補助関数
+    function saveManual(text, role) {
+        const rawData = localStorage.getItem('chatHistory');
+        let currentHistory = [];
+        if (rawData) {
+            const parsed = JSON.parse(rawData);
+            currentHistory = parsed.history || [];
+        }
+        
+        currentHistory.push({ role: role, text: text });
+        if (currentHistory.length > 20) currentHistory.shift();
+        saveToStorage(currentHistory);
+    }
+</script>
 
 </body>
 
