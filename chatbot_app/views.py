@@ -79,26 +79,26 @@ def reply(question):
 
     # 営業関連
     if any(word in question for word in ["営業", "時間", "何時", "休み"]):
-        q_logic += "営業時間は何時から何時までですか？"
+        q_logic = question + "営業時間は何時から何時までですか？"
     # 送料関連
     elif any(word in question for word in ["配送", "送料", "無料", "送料無料", "手数料", "運賃", "クール"]):
-        q_logic += "配送料はいくらですか？送料無料になりますか？"
+        q_logic = question + "配送料はいくらですか？送料無料になりますか？"
     # 領収書・請求書関連
     elif any(word in question for word in ["領収", "発行", "レシート", "インボイス"]):
-        q_logic += "領収書の発行はできますか？"
+        q_logic = question + "領収書の発行はできますか？"
     # お届け・発送関連
     elif any(word in question for word in ["いつ", "届く", "届かない", "予定", "到着"]):
-        q_logic += "お届け予定日いつですか。商品はいつ届きますか？"
+        q_logic = question + "お届け予定日いつですか。商品はいつ届きますか？"
         relevant_sentences = [s for s in sentences if "お届け予定日について" in s or "通常3日以内" in s]
     elif any(word in question for word in ["指定", "変更", "日にち", "日付"]):
-        q_logic += "お届け日の指定や変更は可能ですか？"
+        q_logic = question + "お届け日の指定や変更は可能ですか？"
         relevant_sentences = [s for s in sentences if "指定" in s or "変更" in s]
     # 支払い関連
     elif any(word in question for word in ["支払い", "支払", "決済", "カード", "ペイペイ", "代金"]):
-        q_logic += "支払方法は何がありますか？PayPayやカードは使えますか？"
+        q_logic = question + "支払方法は何がありますか？"
     # キャンセル関連
     elif any(word in question for word in ["キャンセル", "変更",]):
-        q_logic += "注文のキャンセルや変更はできますか？"
+        q_logic = question + "注文のキャンセルや変更はできますか？"
     # 不良品    
     elif any(word in question for word in ["返金", "返品", "傷み", "傷んで", "腐っ", "交換", "不良"]):
         q_logic = "不良品や傷みがあった場合、返品・交換はできますか？" # += ではなく = で上書き
