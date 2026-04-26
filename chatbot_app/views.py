@@ -196,6 +196,8 @@ def bot_response(request):
     try:
         with open(log_file_path, 'a', encoding='utf-8') as f:
             f.write(log_entry)
+            print("=== NEW LOG ENTRY ===")
+            print(log_entry)
     except Exception as e:
         print(f"LOG ERROR: {e}")
 
