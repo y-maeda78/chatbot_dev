@@ -18,7 +18,7 @@ model_name = 'KoichiYasuoka/bert-base-japanese-wikipedia-ud-head'
 model = AutoModelForQuestionAnswering.from_pretrained(
     model_name,
     # メモリ消費量を減らすため、通常32bitで動くがモデルを16bitに落とす（精度は少し低下）
-    torch_dtype=torch.float16,
+    # torch_dtype=torch.float16,
     low_cpu_mem_usage=True
 )
 model.eval()
