@@ -1,0 +1,26 @@
+Django==4.2.2
+gunicorn==20.1.0
+transformers==4.30.1
+accelerate==1.13.0
+huggingface-hub==0.21.0
+tokenizers==0.13.3
+safetensors==0.4.3
+numpy==1.24.3
+tqdm==4.65.0
+PyYAML==6.0
+regex==2023.6.3
+filelock==3.12.1
+fsspec==2023.6.0
+packaging==23.1
+requests==2.31.0
+urllib3==2.0.3
+idna==3.4
+certifi==2023.5.7
+charset-normalizer==3.1.0
+asgiref==3.7.2
+sqlparse==0.4.4
+typing_extensions==4.6.3
+fugashi
+unidic-lite
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==2.0.1+cpu

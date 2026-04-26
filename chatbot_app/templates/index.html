@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>お問い合わせ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* チャットログの基本設定 */
+        #chat-log {
+            height: 450px; /* デフォルト（PC）の高さ */
+            overflow-y: auto;
+            background: white;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        /* --- スマホ向けのレスポンシブ設定 --- */
+        @media (max-width: 576px) {
+            .container {
+                padding: 0 !important;
+                max-width: 100%;
+            }
+
+            #chat-log {
+                /* 画面の高さ(100vh)から、ヘッダーとフォーム分(約160px)を引く */
+                height: calc(100vh - 160px);
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+
+            .chat-header {
+                border-radius: 0 !important;
+            }
+
+            .input-group {
+                border-radius: 0 !important;
+            }
+        }
+
+        /* メッセージのスタイル*/
+        .bot-message {
+            background-color: #f1f3f5;
+            padding: 10px;
+            border-radius: 0 15px 15px 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #7ec9ff;
+            color: #333;
+            padding: 10px;
+            border-radius: 15px 15px 0 15px;
+            margin-bottom: 10px;
+            margin-left: auto;
+            max-width: 80%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="chat-header bg-primary text-white p-3 rounded-top text-center">
+                    チャットでお問い合わせ
+                </div>
+
+                <div id="chat-log" class="d-flex flex-column">
+                    <div class="bot-message">
+                        お問い合わせありがとうございます。<br>
+                        AIチャットサポートです。<br>
+                        <br>
+                        以下のご質問についてお調べいただけます。<br>
+                        ・配送料について<br>
+                        ・お届け日の指定、変更<br>
+                        ・営業時間<br>
+                        ・請求書、領収書の発行<br>
+                        ・キャンセルについて<br>
+                        <br>
+                        質問内容をご入力ください。
+                    </div>
+                </div>
+
+                <form id="chat-form">
+                    {% csrf_token %}
+                    <div class="input-group p-3 bg-white border-top rounded-bottom">
+                        <input type="text" name="input_text" id="user-input" class="form-control"
+                            placeholder="メッセージを入力...">
+                        <button type="submit" class="btn btn-primary" id="send-btn">送信</button>
+                    </div>
+                </form>
+
+                <script>
+                    const chatForm = document.getElementById('chat-form');
+                    const chatLog = document.getElementById('chat-log');
+                    const userInput = document.getElementById('user-input');
+
+                    // メッセージを表示する関数（以前のものと同じ）
+                    function appendMessage(text, sender) {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+                        msgDiv.innerHTML = text;
+                        chatLog.appendChild(msgDiv);
+                        chatLog.scrollTop = chatLog.scrollHeight;
+                    }
+
+                    // フォームの送信イベント
+                    chatForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+
+                        const message = userInput.value;
+                        if (!message) return;
+
+                        appendMessage(message, 'user');
+                        userInput.value = '';
+
+                        // データの送り方を「URLSearchParams」に変更します
+                        const params = new URLSearchParams();
+                        params.append('input_text', message);
+                        params.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        try {
+                            const response = await fetch("{% url 'bot_response' %}", {
+                                method: 'POST',
+                                body: params, // ここをparamsに変更
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded', // フォーム送信と同じ形式だと明示
+                                }
+                            });
+
+                            if (response.ok) {
+                                const botText = await response.text();
+                                appendMessage(botText, 'bot');
+                            } else {
+                                appendMessage("サーバー側でエラーが発生しました(400等)。", 'bot');
+                            }
+                        } catch (error) {
+                            console.error("通信失敗:", error);
+                        }
+                    });
+                </script>
+
+</body>
+
+</html>

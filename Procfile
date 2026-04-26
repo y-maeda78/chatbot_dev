@@ -1,0 +1,1 @@
+web: gunicorn --workers=1 --worker-class=sync chatbot.wsgi --timeout 300 --log-file -
