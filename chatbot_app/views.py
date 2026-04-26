@@ -201,5 +201,12 @@ def bot_response(request):
     except Exception as e:
         print(f"LOG ERROR: {e}")
 
+    print(f"--- CHAT LOG ---")
+    print(f"Time: {datetime.datetime.now()}")
+    print(f"User: {input_data}")
+    print(f"Bot: {bot_answer}")
+    print(f"Score: {score}")
+    print(f"----------------")
+
     # 5. 画面に回答を返す
     return HttpResponse(f"{bot_answer}")
