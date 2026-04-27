@@ -32,3 +32,6 @@ Djangoで構築したAIチャットサポートのテンプレートです。
   - CSRF保護機能を利用した安全なPOST通信。
 - **URLSearchParams**: フォームデータのシリアライズ処理。
 - **JSON**: ブラウザ・サーバー間のデータ受け渡し。
+### AI / Machine Learning
+- **Transformers (Hugging Face)**: 推論エンジンとして活用し、事前学習済みモデルのロードおよびテキスト生成を制御。
+- **PyTorch**: モデルの演算バックエンドとして使用
